@@ -1,0 +1,8 @@
+name: Persian-Font-Fixer
+main:  com.gmail.javad.mnjd.PersianFontFixerSpigot
+version: 1.0
+
+permissions:
+    Persian-Font-Fixer.nofilter:
+        description: Doesn't make your persian readable
+        default: false
