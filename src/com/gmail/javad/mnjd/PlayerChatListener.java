@@ -3,16 +3,22 @@ package com.gmail.javad.mnjd;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.plugin.Plugin;
 
-public class PlayerChatListener implements Listener {
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketEvent;
+
+public class PlayerChatListener extends PacketAdapter {
+	public PlayerChatListener(Plugin plugin, ListenerPriority LP) {
+		super(plugin, LP, PacketType.Play.Client.CHAT);
+		CreateRules();
+	}
+
 	public ArrayList<Rule> RULES = new ArrayList<Rule>();
 
-	public PlayerChatListener() {
+	public void CreateRules() {
 		String nonJoinerLetters = "ﺬآداﺎرﺮزﺰژﮋذﺲﺶﺺﺾوﭗﺚﺖﺞﭻﺢﺦﺐﻂﻆﻊﻎﻒﻖﮏﮓﻞﻢﻦﻮﻪﻰﺪ";
 		String nospaceAfter = "(?!\\s|$|^)";
 		String spaceAfter = "(?=\\s|^|$)";
@@ -104,33 +110,25 @@ public class PlayerChatListener implements Listener {
 		RULES.add(new Rule(nonJoinerRegex + "ی" + spaceAfter, "ﻰ"));
 	}
 
-	@EventHandler(priority = EventPriority.LOWEST)
-	public void onPlayerChat(AsyncPlayerChatEvent chat) {
-
-		if (chat.isCancelled()) {
-			return;
-		}
-		Player player = chat.getPlayer();
-
-		if (!player.hasPermission("Persian-Font-Fixer.nofilter")) {
-			String message = chat.getMessage();
-			if (message.matches("^[\u0600-\u06FF\uFB8A\u067E\u0686\u06AF ]+$")) {
-				for (Rule nrule : RULES) {
-					Matcher m = nrule.regex.matcher(message);
-					while (m.find()) {
-						message = m.replaceAll(nrule.replacerchar);
-					}
+	@Override
+	public void onPacketReceiving(PacketEvent event) {
+		String message = event.getPacket().getStrings().read(0);
+		if (message.matches("^[\u0600-\u06FF\uFB8A\u067E\u0686\u06AF ]+$")) {
+			for (Rule nrule : RULES) {
+				Matcher m = nrule.regex.matcher(message);
+				while (m.find()) {
+					message = m.replaceAll(nrule.replacerchar);
 				}
-
-				StringBuilder Reversed = new StringBuilder();
-				char[] MessageArray = message.toCharArray();
-				for (int i = message.toCharArray().length - 1; i >= 0; i--) {
-					Reversed.append(MessageArray[i]);
-				}
-				chat.setMessage(Reversed.toString());
 			}
-		}
 
+			StringBuilder Reversed = new StringBuilder();
+			char[] MessageArray = message.toCharArray();
+			for (int i = message.toCharArray().length - 1; i >= 0; i--) {
+				Reversed.append(MessageArray[i]);
+			}
+			message = Reversed.toString();
+			event.getPacket().getModifier().write(0, message);
+		}
 	}
 
 }
